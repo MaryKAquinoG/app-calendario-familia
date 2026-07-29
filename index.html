@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>App Calendario Familia</title>
+  <link rel="stylesheet" href="https://pyscript.net/latest/pyscript.css" />
+  <script defer src="https://pyscript.net/latest/pyscript.js"></script>
+  <style>
+    body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; padding: 1rem; background: #fff8e6; color: #2b2b2b; }
+    header { text-align:center; margin-bottom:1rem; }
+    button { background:#ffb703; border:none; padding:.6rem 1rem; border-radius:8px; cursor:pointer; font-weight:700; }
+    .card { background:#fff; border-radius:12px; padding:1rem; box-shadow:0 4px 12px rgba(0,0,0,0.06); max-width:720px; margin:0 auto; }
+    .actividad { font-size:1.15rem; margin: .5rem 0; font-weight:600; color:#0b6e4f; }
+    .lista { margin-top:1rem; }
+    input, select { padding:.5rem; border-radius:8px; border:1px solid #ddd; }
+    footer { margin-top:1rem; text-align:center; color:#666; font-size:.9rem; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>App Calendario Familia</h1>
+    <p>Genera actividades cortas para compartir en familia.</p>
+  </header>
+
+  <main class="card">
+    <label for="fecha">Selecciona fecha:</label>
+    <input id="fecha" type="date" />
+
+    <div style="margin-top:.5rem;">
+      <label for="categoria">Categoría:</label>
+      <select id="categoria">
+        <option value="creativo">Creativo</option>
+        <option value="fisico">Físico</option>
+        <option value="lectura">Lectura</option>
+        <option value="cocina">Cocina</option>
+        <option value="compartir">Compartir/Conversar</option>
+      </select>
+    </div>
+
+    <div style="margin-top:1rem;">
+      <button id="generar">Generar actividad</button>
+      <button id="guardar" style="margin-left:.5rem; background:#83c5be;">Guardar en mi calendario</button>
+    </div>
+
+    <p class="actividad" id="actividad">Toca "Generar actividad" para empezar.</p>
+
+    <div class="lista">
+      <h3>Actividades guardadas</h3>
+      <ul id="lista-actividades"></ul>
+      <button id="compartir" style="margin-top:.5rem; background:#ff7b7b;">Generar mensaje para compartir</button>
+      <p id="mensaje-compartir" style="white-space:pre-wrap; margin-top:.5rem;"></p>
+    </div>
+  </main>
+
+  <footer>
+    <small>Diseñada para actividades familiares cortas — no recoge datos personales.</small>
+  </footer>
+
+  <py-script>
+from js import document, localStorage
+import random
+import json
+
+actividades_por_categoria = {
+  "creativo": [
+    "Hacer un dibujo de la casa de los sueños en 5 minutos",
+    "Crear un cuento entre todos: cada uno añade una frase",
+    "Construir algo con cajas y pegamento"
+  ],
+  "fisico": [
+    "Hacer una mini carrera en el patio de 2 minutos",
+    "Bailar una canción divertida juntos",
+    "Sesión de estiramientos en familia por 3 minutos"
+  ],
+  "lectura": [
+    "Leer un cuento en voz alta y cambiar voces",
+    "Elegir un libro corto y leerlo entre todos",
+    "Inventar un final alternativo para un cuento"
+  ],
+  "cocina": [
+    "Preparar un snack sencillo juntos (ej: fruta con yogur)",
+    "Hacer una pizza con ingredientes divertidos",
+    "Decorar galletas en 10 minutos"
+  ],
+  "compartir": [
+    "Decir tres cosas que hicimos hoy y por qué nos gustaron",
+    "Hacer una 'rueda de agradecimientos' rápida",
+    "Contar el mejor momento del día en familia"
+  ]
+}
+
+def pick_activity(category):
+    return random.choice(actividades_por_categoria.get(category, actividades_por_categoria["creativo"]))
+
+def mostrar_actividad(ev=None):
+    cat = document.getElementById("categoria").value
+    act = pick_activity(cat)
+    document.getElementById("actividad").innerText = act
+
+def cargar_lista():
+    data = localStorage.getItem("actividades_guardadas")
+    if data:
+        try:
+            return json.loads(data)
+        except:
+            return []
+    return []
+
+def guardar_en_lista(ev=None):
+    fecha = document.getElementById("fecha").value or "Sin fecha"
+    actividad = document.getElementById("actividad").innerText
+    if not actividad or actividad.startswith("Toca"):
+        document.getElementById("actividad").innerText = "Primero genera una actividad."
+        return
+    lista = cargar_lista()
+    lista.append({"fecha": fecha, "actividad": actividad})
+    localStorage.setItem("actividades_guardadas", json.dumps(lista))
+    render_lista()
+
+def render_lista():
+    ul = document.getElementById("lista-actividades")
+    ul.innerHTML = ""
+    for item in cargar_lista():
+        li = document.createElement("li")
+        li.innerText = f"{item['fecha']}: {item['actividad']}"
+        ul.appendChild(li)
+
+def generar_mensaje_compartir(ev=None):
+    lista = cargar_lista()
+    if not lista:
+        document.getElementById("mensaje-compartir").innerText = "No hay actividades guardadas aún."
+        return
+    lines = ["Actividades familiares:"]
+    for item in lista:
+        lines.append(f"- {item['fecha']}: {item['actividad']}")
+    text = "\n".join(lines)
+    document.getElementById("mensaje-compartir").innerText = text
+
+# eventos
+from js import document as _doc
+_doc.getElementById("generar").addEventListener("click", mostrar_actividad)
+_doc.getElementById("guardar").addEventListener("click", guardar_en_lista)
+_doc.getElementById("compartir").addEventListener("click", generar_mensaje_compartir)
+
+# al cargar
+render_lista()
+  </py-script>
+</body>
+</html>
